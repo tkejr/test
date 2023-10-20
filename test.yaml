@@ -1,0 +1,84 @@
+---
+- hosts: uc4
+  vars:
+    ansible_connection: winrm
+    ansible_winrm_port: 5985
+    ansible_winrm_message_encryption: auto
+    ansible_winrm_transport: ntlm
+    ansible_winrm_server_cert_validation: ignore
+
+  tasks:
+    - name: Set file paths for App Servers
+      set_fact:
+        file_path_1: "D:/Automic/Automation.Platform/AutomationEngine/Temp/WPsrv_log_*_00.txt"
+        file_path_2: "D:/Automic/Automation.Platform/AutomationEngine/Temp/CPsrv_log_*_00.txt"
+        uniq_id_1: WpSrv
+        uniq_id_2: CPsrv
+      when: "'app' in inventory_hostname|lower"
+
+    - name: Set file paths for Web Servers
+      set_fact:
+        file_path_1: "C:/Program Files/Apache Software Foundation/Tomcat 9.0/logs/{{ inventory_hostname|lower }}_awi_LOG.00.txt"
+        file_path_2: "C:/Program Files/Apache Software Foundation/Tomcat 9.0/logs/{{ inventory_hostname|lower }}_awi_FRAMEWORK.00.txt"
+        uniq_id_1: Awi_Logs
+        uniq_id_2: Framework
+      when: "'web' in inventory_hostname|lower"
+
+  roles:
+    - role: dfa_apma_metricbeat
+      metricbeat_config_fields:
+        owner: aps
+        env: "{{ env }}"
+        app: uc4
+      tags:
+        - metricbeat_install
+
+    - role: dfa_apma_winlogbeat
+      winlogbeat_config_fields:
+        owner: aps
+        env: "{{ env }}"
+        app: uc4
+      tags:
+        - winlogbeat_install
+
+    - role: dfa_apma_filebeat
+      filebeat_config_fields:
+        owner: aps
+        env: "{{ env }}"
+        app: uc4
+      filebeat_enable_modules:
+        - name: elasticsearch
+      filebeat_custom_modules:
+        - name: elasticsearch
+          content: 
+            - module: elasticsearch
+              server:
+                enabled: true
+                var.paths:
+                  - /data/elk/logs/elasticsearch_server.json
+              gc:
+                enabled: true
+                var.paths:
+                  - /data/elk/logs/gc.log
+              audit:
+                enabled: true
+              slowlog:
+                enabled: true
+                var.paths:
+                  - /data/elk/logs/elasticsearch_index_indexing_slowlog.log
+                  - /data/elk/logs/elasticsearch_index_search_slowlog.log
+              deprecation:
+                enabled: true
+                var.paths:
+                  - /data/elk/logs/elasticsearch_deprecation.log
+      filebeat_inputs:
+        - type: filestream
+          id: "{{ uniq_id_1 }}"
+          paths:
+            - "{{ file_path_1 }}"
+        - type: filestream
+          id: "{{ uniq_id_2 }}"
+          paths:
+            - "{{ file_path_2 }}"
+      tags:
+        - filebeat_install
