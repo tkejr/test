@@ -1,51 +1,36 @@
+# Example usage: ansible-playbook -i inventory/dev playbook.yml 
+# This playbook installs beats on uc4 and globalscape
+
 ---
-- hosts: uc4
+- hosts: '{{ host }}'
   vars:
     ansible_connection: winrm
     ansible_winrm_port: 5985
     ansible_winrm_message_encryption: auto
     ansible_winrm_transport: ntlm
     ansible_winrm_server_cert_validation: ignore
-
-  tasks:
-    - name: Set file paths for App Servers
-      set_fact:
-        file_path_1: "D:/Automic/Automation.Platform/AutomationEngine/Temp/WPsrv_log_*_00.txt"
-        file_path_2: "D:/Automic/Automation.Platform/AutomationEngine/Temp/CPsrv_log_*_00.txt"
-        uniq_id_1: WpSrv
-        uniq_id_2: CPsrv
-      when: "'app' in inventory_hostname|lower"
-
-    - name: Set file paths for Web Servers
-      set_fact:
-        file_path_1: "C:/Program Files/Apache Software Foundation/Tomcat 9.0/logs/{{ inventory_hostname|lower }}_awi_LOG.00.txt"
-        file_path_2: "C:/Program Files/Apache Software Foundation/Tomcat 9.0/logs/{{ inventory_hostname|lower }}_awi_FRAMEWORK.00.txt"
-        uniq_id_1: Awi_Logs
-        uniq_id_2: Framework
-      when: "'web' in inventory_hostname|lower"
-
   roles:
     - role: dfa_apma_metricbeat
       metricbeat_config_fields:
-        owner: aps
-        env: "{{ env }}"
-        app: uc4
+        owner: '{{ owner }}'
+        env: '{{ env }}'
+        app: '{{ app }}'
       tags:
         - metricbeat_install
 
     - role: dfa_apma_winlogbeat
       winlogbeat_config_fields:
-        owner: aps
-        env: "{{ env }}"
-        app: uc4
+        owner: '{{ owner }}'
+        env: '{{ env }}'
+        app: '{{ app }}'
       tags:
         - winlogbeat_install
 
     - role: dfa_apma_filebeat
       filebeat_config_fields:
-        owner: aps
-        env: "{{ env }}"
-        app: uc4
+        owner: '{{ owner }}'
+        env: '{{ env }}'
+        app: '{{ app }}'
       filebeat_enable_modules:
         - name: elasticsearch
       filebeat_custom_modules:
@@ -73,12 +58,9 @@
                   - /data/elk/logs/elasticsearch_deprecation.log
       filebeat_inputs:
         - type: filestream
-          id: "{{ uniq_id_1 }}"
+          id: '{{ item[0] }}'
           paths:
-            - "{{ file_path_1 }}"
-        - type: filestream
-          id: "{{ uniq_id_2 }}"
-          paths:
-            - "{{ file_path_2 }}"
+            - '{{ item[1] }}'
+        loop: '{{ filebeat_config }}'
       tags:
         - filebeat_install
