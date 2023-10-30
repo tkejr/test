@@ -1,66 +1,68 @@
-# Example usage: ansible-playbook -i inventory/dev playbook.yml 
+# Example usage: ansible-playbook -i inventory/dev playbook.yml
 # This playbook installs beats on uc4 and globalscape
 
 ---
+
 - hosts: '{{ host }}'
   vars:
-    ansible_connection: winrm
+    ansible_connection: 'winrm'
     ansible_winrm_port: 5985
-    ansible_winrm_message_encryption: auto
-    ansible_winrm_transport: ntlm
-    ansible_winrm_server_cert_validation: ignore
+    ansible_winrm_message_encryption: 'auto'
+    ansible_winrm_transport: 'ntlm'
+    ansible_winrm_server_cert_validation: 'ignore'
+  
   roles:
-    - role: dfa_apma_metricbeat
+    - role: 'dfa_apma_metricbeat'
       metricbeat_config_fields:
         owner: '{{ owner }}'
         env: '{{ env }}'
         app: '{{ app }}'
       tags:
-        - metricbeat_install
+        - 'metricbeat_install'
 
-    - role: dfa_apma_winlogbeat
+    - role: 'dfa_apma_winlogbeat'
       winlogbeat_config_fields:
         owner: '{{ owner }}'
         env: '{{ env }}'
         app: '{{ app }}'
       tags:
-        - winlogbeat_install
+        - 'winlogbeat_install'
 
-    - role: dfa_apma_filebeat
+    - role: 'dfa_apma_filebeat'
       filebeat_config_fields:
         owner: '{{ owner }}'
         env: '{{ env }}'
         app: '{{ app }}'
       filebeat_enable_modules:
-        - name: elasticsearch
+        - name: 'elasticsearch'
       filebeat_custom_modules:
-        - name: elasticsearch
-          content: 
-            - module: elasticsearch
+        - name: 'elasticsearch'
+          content:
+            - module: 'elasticsearch'
               server:
                 enabled: true
                 var.paths:
-                  - /data/elk/logs/elasticsearch_server.json
+                  - '/data/elk/logs/elasticsearch_server.json'
               gc:
                 enabled: true
                 var.paths:
-                  - /data/elk/logs/gc.log
+                  - '/data/elk/logs/gc.log'
               audit:
                 enabled: true
               slowlog:
                 enabled: true
                 var.paths:
-                  - /data/elk/logs/elasticsearch_index_indexing_slowlog.log
-                  - /data/elk/logs/elasticsearch_index_search_slowlog.log
+                  - '/data/elk/logs/elasticsearch_index_indexing_slowlog.log'
+                  - '/data/elk/logs/elasticsearch_index_search_slowlog.log'
               deprecation:
                 enabled: true
                 var.paths:
-                  - /data/elk/logs/elasticsearch_deprecation.log
+                  - '/data/elk/logs/elasticsearch_deprecation.log'
       filebeat_inputs:
-        - type: filestream
+        - type: 'filestream'
           id: '{{ item[0] }}'
           paths:
             - '{{ item[1] }}'
         loop: '{{ filebeat_config }}'
       tags:
-        - filebeat_install
+        - 'filebeat_install'
