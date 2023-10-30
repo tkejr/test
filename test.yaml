@@ -10,29 +10,34 @@
     ansible_winrm_message_encryption: 'auto'
     ansible_winrm_transport: 'ntlm'
     ansible_winrm_server_cert_validation: 'ignore'
-  
+
   roles:
-    - role: 'dfa_apma_metricbeat'
-      metricbeat_config_fields:
-        owner: '{{ owner }}'
-        env: '{{ env }}'
-        app: '{{ app }}'
+    - name: 'Install Metricbeat'
       tags:
         - 'metricbeat_install'
-
-    - role: 'dfa_apma_winlogbeat'
-      winlogbeat_config_fields:
-        owner: '{{ owner }}'
-        env: '{{ env }}'
+      role: 'dfa_apma_metricbeat'
+      metricbeat_config_fields:
         app: '{{ app }}'
+        env: '{{ env }}'
+        owner: '{{ owner }}'
+
+    - name: 'Install Winlogbeat'
       tags:
         - 'winlogbeat_install'
-
-    - role: 'dfa_apma_filebeat'
-      filebeat_config_fields:
-        owner: '{{ owner }}'
-        env: '{{ env }}'
+      role: 'dfa_apma_winlogbeat'
+      winlogbeat_config_fields:
         app: '{{ app }}'
+        env: '{{ env }}'
+        owner: '{{ owner }}'
+
+    - name: 'Install Filebeat'
+      tags:
+        - 'filebeat_install'
+      role: 'dfa_apma_filebeat'
+      filebeat_config_fields:
+        app: '{{ app }}'
+        env: '{{ env }}'
+        owner: '{{ owner }}'
       filebeat_enable_modules:
         - name: 'elasticsearch'
       filebeat_custom_modules:
@@ -63,6 +68,4 @@
           id: '{{ item[0] }}'
           paths:
             - '{{ item[1] }}'
-        loop: '{{ filebeat_config }}'
-      tags:
-        - 'filebeat_install'
+      loop: '{{ filebeat_config }}'
